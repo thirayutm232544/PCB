@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    color-scheme: light;
+    --primary: #5b67f1;
+    --primary-dark: #4451d8;
+    --primary-light: #eef0fe;
+    --bg: #f2f4fb;
+    --card: #ffffff;
+    --text: #20264a;
+    --muted: #8890b5;
+    --success: #22c3a6;
+    --warning: #f6b93b;
+    --danger: #ef5b5b;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 20px; background: var(--bg); color: var(--text);
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .card {
+    background: var(--card); border-radius: var(--radius); padding: 20px;
+    box-shadow: 0 4px 18px rgba(60,70,150,0.07);
+  }
+  .mb { margin-bottom: 16px; }
+
+  /* header */
+  .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .header-title { font-size: 16px; font-weight: 800; margin: 0; }
+  .header-sub { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .search-box {
+    display: flex; align-items: center; gap: 8px; background: var(--bg);
+    border-radius: 12px; padding: 10px 14px; min-width: 180px;
+  }
+  .search-box input {
+    border: none; background: transparent; outline: none; font-size: 13px; width: 100%; color: var(--text);
+  }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 12px; border: none; background: var(--primary);
+    color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  }
+  .icon-btn.outline { background: #fff; border: 1.5px solid var(--primary); color: var(--primary); }
+
+  /* toolbar */
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  .toolbar .field { display: flex; flex-direction: column; gap: 4px; }
+  .toolbar label { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .toolbar input[type=date] {
+    padding: 9px 10px; border-radius: 10px; border: 1px solid #e2e4f3; font-size: 13px; color: var(--text);
+  }
+  .btn {
+    padding: 10px 16px; border-radius: 10px; border: none; background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .btn.secondary { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn.ghost { background: var(--primary-light); color: var(--primary-dark); }
+
+  /* KPI */
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 16px; align-items: stretch; }
+  @media (max-width: 900px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+  .kpi-card {
+    border-radius: var(--radius); padding: 18px; color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    display: flex; flex-direction: column; gap: 10px; min-width: 140px;
+  }
+  .kpi-card .kpi-icon {
+    width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,0.22);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .kpi-card .kpi-label { font-size: 12px; opacity: 0.85; }
+  .kpi-card .kpi-num { font-size: 24px; font-weight: 800; }
+  .kpi-side { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 4px 8px; min-width: 140px; }
+  .kpi-side .item .kpi-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .kpi-side .item .kpi-num { font-size: 22px; font-weight: 800; }
+  .kpi-num.danger { color: var(--danger); }
+  .kpi-num.primary-text { color: var(--primary); }
+
+  /* grid layout for chart cards */
+  .grid3 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 900px) { .grid3 { grid-template-columns: 0.8fr 1.1fr 1.1fr; } }
+  .card h3 { font-size: 13.5px; margin: 0 0 14px; font-weight: 800; }
+  .stack-stats { display: flex; flex-direction: column; gap: 18px; height: 100%; justify-content: center; }
+  .stack-stats .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .stack-stats .num { font-size: 26px; font-weight: 800; }
+
+  /* donut */
+  .donut-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .donut {
+    width: 130px; height: 130px; border-radius: 50%; flex-shrink: 0; position: relative;
+    background: conic-gradient(#e5e7f7 0deg 360deg);
+  }
+  .donut::after {
+    content: ''; position: absolute; top: 18px; left: 18px; right: 18px; bottom: 18px;
+    background: var(--card); border-radius: 50%;
+  }
+  .donut-center {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 2;
+  }
+  .donut-center .n { font-size: 18px; font-weight: 800; }
+  .donut-center .t { font-size: 10px; color: var(--muted); }
+  .legend { display: flex; flex-direction: column; gap: 8px; font-size: 12px; flex: 1; min-width: 140px; }
+  .legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+  .legend .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .legend .name { display: flex; align-items: center; color: var(--text); }
+  .legend .val { color: var(--muted); font-weight: 700; }
+
+  /* line chart */
+  .line-chart-wrap svg { width: 100%; height: 140px; overflow: visible; }
+  .line-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  /* vertical bar chart */
+  .vbar-chart { display: flex; align-items: flex-end; gap: 10px; height: 150px; }
+  .vbar-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+  .vbar-item .track { width: 100%; max-width: 34px; background: var(--primary-light); border-radius: 8px 8px 4px 4px; display: flex; align-items: flex-end; height: 100%; }
+  .vbar-item .fill { width: 100%; border-radius: 8px 8px 4px 4px; background: linear-gradient(180deg, var(--primary), var(--primary-dark)); }
+  .vbar-item .lbl { font-size: 10px; color: var(--muted); text-align: center; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vbar-item .val { font-size: 11px; font-weight: 800; color: var(--text); }
+
+  /* rings */
+  .ring-row { display: flex; flex-direction: column; gap: 16px; justify-content: center; height: 100%; }
+  .ring-item { display: flex; align-items: center; gap: 14px; }
+  .ring {
+    width: 58px; height: 58px; border-radius: 50%; position: relative; flex-shrink: 0;
+  }
+  .ring::after { content: ''; position: absolute; top: 7px; left: 7px; right: 7px; bottom: 7px; background: var(--card); border-radius: 50%; }
+  .ring-icon { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 2; }
+  .ring-text .pct { font-size: 20px; font-weight: 800; }
+  .ring-text .lbl { font-size: 12px; color: var(--muted); }
+
+  /* filters + table */
+  .filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters button {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid #e2e4f3; background: #fff;
+    font-size: 12.5px; cursor: pointer; color: var(--text);
+  }
+  .filters button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .table-wrap { overflow-x: auto; border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+  th, td { padding: 10px 8px; font-size: 12.5px; text-align: left; border-bottom: 1px solid #eef0fa; white-space: nowrap; }
+  th { background: var(--bg); font-weight: 700; color: var(--muted); position: sticky; top: 0; }
+  .status-tag { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .status-กำลังล้าง { background: #fff3da; color: #a9761c; }
+  .status-เสร็จสิ้น { background: #e2f8f2; color: #16967d; }
+  .status-ผิดปกติ { background: #fde7e7; color: var(--danger); }
+  .issue-tag { background: #fde7e7; color: var(--danger); padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+  .photo-link { color: var(--primary); font-weight: 700; text-decoration: none; }
+  .empty { text-align: center; color: var(--muted); padding: 20px; }
+  .empty-small { color: var(--muted); font-size: 12.5px; padding: 8px 0; }
+  .filter-note { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
+
+  /* settings modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,25,60,0.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-overlay.show { display: flex; }
+  .modal-box { background: #fff; border-radius: 16px; padding: 22px; max-width: 440px; width: 100%; }
+  .modal-box h2 { font-size: 16px; margin: 0 0 8px; }
+  .modal-box p { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.6; }
+  .modal-box input[type=text] { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid #e2e4f3; font-size: 13px; margin-bottom: 12px; }
+  .modal-box .btn-row { display: flex; gap: 8px; }
+  .modal-box .btn-row .btn { flex: 1; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="card header mb">
+    <div class="header-left">
+      <div class="avatar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#fff" stroke-width="2"/><circle cx="9" cy="9" r="1.4" fill="#fff"/><circle cx="15" cy="9" r="1.4" fill="#fff"/><circle cx="9" cy="15" r="1.4" fill="#fff"/><circle cx="15" cy="15" r="1.4" fill="#fff"/></svg>
+      </div>
+      <div>
+        <p class="header-title">PCBA Board Cleaning Dashboard</p>
+        <p class="header-sub">รายงานการล้างบอร์ด &amp; ปัญหาคุณภาพ</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8890b5" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#8890b5" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" id="searchBox" placeholder="ค้นหารหัสบอร์ด..." oninput="render()">
+      </div>
+      <button class="icon-btn" id="refreshBtn" title="รีเฟรชข้อมูล" onclick="load()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M18 4v5h-5M6 20v-5h5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn outline" id="settingsBtn" title="ตั้งค่า API URL" onclick="openSettings()">⚙</button>
+    </div>
+
+    <div class="toolbar" style="width:100%;">
+      <div class="field">
+        <label>ตั้งแต่วันที่</label>
+        <input type="date" id="fromDate">
+      </div>
+      <div class="field">
+        <label>ถึงวันที่</label>
+        <input type="date" id="toDate">
+      </div>
+      <button class="btn" onclick="applyDateFilter()">ดูตามช่วงวันที่</button>
+      <button class="btn secondary" onclick="clearDateFilter()">ล้างตัวกรอง</button>
+      <button class="btn ghost" onclick="exportOffline()">⬇ ดาวน์โหลดรายงานออฟไลน์</button>
+    </div>
+  </div>
+
+  <div class="kpi-row mb">
+    <div class="kpi-card">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2 3 7l9 5 9-5-9-5Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+      <div class="kpi-label">บอร์ดทั้งหมด</div>
+      <div class="kpi-num" id="statTotal">-</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6"/><path d="M12 7v5l3.5 2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+      <div class="kpi-label">กำลังล้าง</div>
+      <div class="kpi-num" id="statInProgress">-</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="kpi-label">เสร็จสิ้น</div>
+      <div class="kpi-num" id="statDone">-</div>
+    </div>
+    <div class="kpi-side">
+      <div class="item">
+        <div class="kpi-label">เวลาล้างเฉลี่ย (นาที)</div>
+        <div class="kpi-num primary-text" id="statAvg">-</div>
+      </div>
+      <div class="item">
+        <div class="kpi-label">พบปัญหาคุณภาพ</div>
+        <div class="kpi-num danger" id="statIssue">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3 mb">
+    <div class="card">
+      <div class="stack-stats">
+        <div class="item">
+          <div class="label">ไลน์ที่มีข้อมูล</div>
+          <div class="num" id="statLines">-</div>
+        </div>
+        <div class="item">
+          <div class="label">โมเดลที่มีข้อมูล</div>
+          <div class="num" id="statModels">-</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>สาเหตุปัญหาที่พบบ่อย</h3>
+      <div class="donut-wrap">
+        <div style="position:relative;">
+          <div class="donut" id="donutChart"></div>
+          <div class="donut-center"><div class="n" id="donutTotal">-</div><div class="t">รายการ</div></div>
+        </div>
+        <div class="legend" id="donutLegend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>แนวโน้มจำนวนบอร์ดต่อวัน</h3>
+      <div class="line-chart-wrap">
+        <svg id="lineChart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+        <div class="line-labels" id="lineLabels"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3 mb">
+    <div class="card">
+      <h3>ไลน์ที่มีปัญหาบ่อย (Top 5)</h3>
+      <div class="vbar-chart" id="lineBarChart"></div>
+    </div>
+    <div class="card">
+      <h3>โมเดลที่มีปัญหาบ่อย (Top 5)</h3>
+      <div class="vbar-chart" id="modelBarChart"></div>
+    </div>
+    <div class="card">
+      <h3>อัตราคุณภาพ</h3>
+      <div class="ring-row">
+        <div class="ring-item">
+          <div class="ring" id="ringOk">
+            <div class="ring-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#22c3a6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div class="ring-text"><div class="pct" id="pctOk">-</div><div class="lbl">ไม่พบปัญหา</div></div>
+        </div>
+        <div class="ring-item">
+          <div class="ring" id="ringBad">
+            <div class="ring-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01" stroke="#ef5b5b" stroke-width="2.5" stroke-linecap="round"/><path d="M10.3 3.9 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="#ef5b5b" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div class="ring-text"><div class="pct" id="pctBad">-</div><div class="lbl">พบปัญหา</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px;">รายการทั้งหมด</h3>
+    <div id="filterNote" class="filter-note"></div>
+    <div class="filters">
+      <button class="active" data-f="all" onclick="filterBy('all', this)">ทั้งหมด</button>
+      <button data-f="กำลังล้าง" onclick="filterBy('กำลังล้าง', this)">กำลังล้าง</button>
+      <button data-f="เสร็จสิ้น" onclick="filterBy('เสร็จสิ้น', this)">เสร็จสิ้น</button>
+      <button data-f="พบปัญหา" onclick="filterBy('พบปัญหา', this)">พบปัญหา</button>
+      <button data-f="ผิดปกติ" onclick="filterBy('ผิดปกติ', this)">ผิดปกติ</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>เลขรัน</th><th>วันที่</th><th>เวลาเข้า</th><th>รหัสพนักงาน(เข้า)</th>
+            <th>รหัสบอร์ด</th><th>โมเดล</th><th>ไลน์</th><th>Zone</th><th>รูปเข้า</th>
+            <th>เวลาออก</th><th>รหัสพนักงาน(ออก)</th><th>ผู้รับรอง</th><th>รูปออก</th>
+            <th>พบปัญหา</th><th>ประเภทปัญหา</th><th>หมายเหตุ</th>
+            <th>นาที</th><th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="emptyMsg" class="empty" style="display:none;">ยังไม่มีข้อมูล</div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box">
+    <h2>ตั้งค่าเชื่อมต่อระบบ</h2>
+    <p>วาง Web App URL ของ Google Apps Script ที่ deploy ไว้ (หน้าตาเหมือน https://script.google.com/macros/s/xxxxx/exec) ตั้งครั้งเดียวต่อเครื่อง ระบบจะจำไว้ให้</p>
+    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
+    <div class="btn-row">
+      <button class="btn secondary" onclick="closeSettings()">ปิด</button>
+      <button class="btn" onclick="saveSettings()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var allRows = [];
+  var viewRows = [];
+  var currentFilter = 'all';
+  var PALETTE = ['#5b67f1', '#8b93f7', '#22c3a6', '#f6b93b', '#ef5b5b', '#b7bdfa', '#4451d8', '#c7ccfb'];
+
+  // ---------- ตั้งค่า API URL (Apps Script Web App ที่ทำหน้าที่เป็น JSON API) ----------
+  function getApiUrl() { return localStorage.getItem('api_url') || ''; }
+
+  function openSettings() {
+    document.getElementById('apiUrlInput').value = getApiUrl();
+    document.getElementById('settingsModal').classList.add('show');
+  }
+  function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+  }
+  function saveSettings() {
+    var v = document.getElementById('apiUrlInput').value.trim();
+    if (!v) { alert('กรุณาวาง Web App URL ก่อน'); return; }
+    localStorage.setItem('api_url', v);
+    closeSettings();
+    load();
+  }
+
+  function callApiGet(action) {
+    var apiUrl = getApiUrl();
+    if (!apiUrl) { openSettings(); return Promise.reject(new Error('ยังไม่ได้ตั้งค่า API URL')); }
+    return fetch(apiUrl + '?action=' + encodeURIComponent(action)).then(function (r) { return r.json(); });
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso);
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function statusClass(status) {
+    if (status.indexOf('ผิดปกติ') === 0) return 'status-ผิดปกติ';
+    return 'status-' + status;
+  }
+
+  function esc(v) {
+    var div = document.createElement('div');
+    div.innerText = (v === null || v === undefined) ? '' : v;
+    return div.innerHTML;
+  }
+
+  function photoCell(url) {
+    if (!url) return '-';
+    return '<a class="photo-link" href="' + esc(url) + '" target="_blank" rel="noopener">ดูรูป</a>';
+  }
+
+  function applyDateFilter() {
+    var from = document.getElementById('fromDate').value;
+    var to = document.getElementById('toDate').value;
+    viewRows = allRows.filter(function (r) {
+      if (from && r.date < from) return false;
+      if (to && r.date > to) return false;
+      return true;
+    });
+    var noteEl = document.getElementById('filterNote');
+    if (from || to) {
+      noteEl.innerText = 'กำลังแสดงข้อมูลช่วง ' + (from || 'เริ่มต้น') + ' ถึง ' + (to || 'ปัจจุบัน');
+    } else {
+      noteEl.innerText = '';
+    }
+    refreshAll();
+  }
+
+  function clearDateFilter() {
+    document.getElementById('fromDate').value = '';
+    document.getElementById('toDate').value = '';
+    document.getElementById('filterNote').innerText = '';
+    viewRows = allRows.slice();
+    refreshAll();
+  }
+
+  function refreshAll() {
+    updateStats();
+    updateDonut();
+    updateLineChart();
+    updateBarCharts();
+    updateRings();
+    render();
+  }
+
+  function render() {
+    var tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    var rows = viewRows;
+    if (currentFilter === 'พบปัญหา') {
+      rows = rows.filter(function (r) { return r.hasIssue === 'พบปัญหา'; });
+    } else if (currentFilter === 'ผิดปกติ') {
+      rows = rows.filter(function (r) { return r.status.indexOf('ผิดปกติ') === 0; });
+    } else if (currentFilter !== 'all') {
+      rows = rows.filter(function (r) { return r.status === currentFilter; });
+    }
+    var search = (document.getElementById('searchBox').value || '').trim().toLowerCase();
+    if (search) {
+      rows = rows.filter(function (r) { return (r.barcode || '').toString().toLowerCase().indexOf(search) !== -1; });
+    }
+    document.getElementById('emptyMsg').style.display = rows.length ? 'none' : 'block';
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + esc(r.runNo) + '</td>' +
+        '<td>' + esc(r.date) + '</td>' +
+        '<td>' + fmtTime(r.timeIn) + '</td>' +
+        '<td>' + esc(r.empIn || '-') + '</td>' +
+        '<td>' + esc(r.barcode) + '</td>' +
+        '<td>' + esc(r.model || '-') + '</td>' +
+        '<td>' + esc(r.line || '-') + '</td>' +
+        '<td>' + esc(r.zone || '-') + '</td>' +
+        '<td>' + photoCell(r.photoIn) + '</td>' +
+        '<td>' + fmtTime(r.timeOut) + '</td>' +
+        '<td>' + esc(r.empOut || '-') + '</td>' +
+        '<td>' + esc(r.approver || '-') + '</td>' +
+        '<td>' + photoCell(r.photoOut) + '</td>' +
+        '<td>' + (r.hasIssue === 'พบปัญหา' ? '<span class="issue-tag">พบปัญหา</span>' : (r.hasIssue || '-')) + '</td>' +
+        '<td>' + esc(r.issueType || '-') + '</td>' +
+        '<td>' + esc(r.note || '-') + '</td>' +
+        '<td>' + (r.duration !== '' ? esc(r.duration) : '-') + '</td>' +
+        '<td><span class="status-tag ' + statusClass(r.status) + '">' + esc(r.status) + '</span></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterBy(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filters button').forEach(function (b) { b.className = ''; });
+    btn.className = 'active';
+    render();
+  }
+
+  function updateStats() {
+    var total = viewRows.length;
+    var inProgress = viewRows.filter(function (r) { return r.status === 'กำลังล้าง'; }).length;
+    var done = viewRows.filter(function (r) { return r.status === 'เสร็จสิ้น'; });
+    var issueCount = viewRows.filter(function (r) { return r.hasIssue === 'พบปัญหา'; }).length;
+    var avg = done.length
+      ? Math.round(done.reduce(function (s, r) { return s + (Number(r.duration) || 0); }, 0) / done.length)
+      : 0;
+    var lineSet = {}, modelSet = {};
+    viewRows.forEach(function (r) { if (r.line) lineSet[r.line] = 1; if (r.model) modelSet[r.model] = 1; });
+
+    document.getElementById('statTotal').innerText = total;
+    document.getElementById('statInProgress').innerText = inProgress;
+    document.getElementById('statDone').innerText = done.length;
+    document.getElementById('statAvg').innerText = avg;
+    document.getElementById('statIssue').innerText = issueCount;
+    document.getElementById('statLines').innerText = Object.keys(lineSet).length;
+    document.getElementById('statModels').innerText = Object.keys(modelSet).length;
+  }
+
+  function countSplit(rows, field) {
+    var counts = {};
+    rows.forEach(function (r) {
+      if (r.hasIssue !== 'พบปัญหา' || !r[field]) return;
+      r[field].split(',').forEach(function (v) {
+        v = v.trim();
+        if (!v) return;
+        counts[v] = (counts[v] || 0) + 1;
+      });
+    });
+    return counts;
+  }
+
+  function countBy(rows, field) {
+    var counts = {};
+    rows.forEach(function (r) {
+      if (r.hasIssue !== 'พบปัญหา' || !r[field]) return;
+      var v = r[field].trim();
+      if (!v) return;
+      counts[v] = (counts[v] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function topEntries(counts, limit) {
+    var entries = Object.keys(counts).map(function (k) { return [k, counts[k]]; });
+    entries.sort(function (a, b) { return b[1] - a[1]; });
+    return entries.slice(0, limit);
+  }
+
+  function updateDonut() {
+    var counts = countSplit(viewRows, 'issueType');
+    var entries = topEntries(counts, 5);
+    var totalIssues = Object.values(counts).reduce(function (a, b) { return a + b; }, 0);
+    var donut = document.getElementById('donutChart');
+    var legend = document.getElementById('donutLegend');
+    document.getElementById('donutTotal').innerText = totalIssues;
+
+    if (entries.length === 0) {
+      donut.style.background = '#e5e7f7';
+      legend.innerHTML = '<div class="empty-small">ไม่มีข้อมูลปัญหาในช่วงที่เลือก</div>';
+      return;
+    }
+
+    var cumulative = 0;
+    var stops = entries.map(function (e, i) {
+      var start = (cumulative / totalIssues) * 360;
+      cumulative += e[1];
+      var end = (cumulative / totalIssues) * 360;
+      return PALETTE[i % PALETTE.length] + ' ' + start.toFixed(1) + 'deg ' + end.toFixed(1) + 'deg';
+    }).join(', ');
+    donut.style.background = 'conic-gradient(' + stops + ')';
+
+    legend.innerHTML = entries.map(function (e, i) {
+      var pct = Math.round((e[1] / totalIssues) * 100);
+      return '<div class="row"><span class="name"><span class="dot" style="background:' + PALETTE[i % PALETTE.length] + '"></span>' + esc(e[0]) + '</span><span class="val">' + pct + '%</span></div>';
+    }).join('');
+  }
+
+  function updateLineChart() {
+    var counts = {};
+    viewRows.forEach(function (r) {
+      if (!r.date) return;
+      counts[r.date] = (counts[r.date] || 0) + 1;
+    });
+    var dates = Object.keys(counts).sort();
+    dates = dates.slice(-14); // แสดงล่าสุดไม่เกิน 14 วัน
+    var values = dates.map(function (d) { return counts[d]; });
+    var svg = document.getElementById('lineChart');
+    var labelsEl = document.getElementById('lineLabels');
+
+    if (dates.length === 0) {
+      svg.innerHTML = '';
+      labelsEl.innerHTML = '<span class="empty-small">ไม่มีข้อมูล</span>';
+      return;
+    }
+    if (dates.length === 1) { dates = [dates[0], dates[0]]; values = [values[0], values[0]]; }
+
+    var w = 300, h = 140, pad = 10;
+    var max = Math.max.apply(null, values) || 1;
+    var stepX = (w - pad * 2) / (values.length - 1);
+    var points = values.map(function (v, i) {
+      var x = pad + i * stepX;
+      var y = h - pad - (v / max) * (h - pad * 2);
+      return [x, y];
+    });
+    var polyStr = points.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+    var areaStr = 'M' + points[0][0].toFixed(1) + ',' + (h - pad) + ' L' + polyStr.replace(/ /g, ' L') + ' L' + points[points.length - 1][0].toFixed(1) + ',' + (h - pad) + ' Z';
+
+    var circles = points.map(function (p) {
+      return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="#5b67f1"/>';
+    }).join('');
+
+    svg.innerHTML =
+      '<defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="#5b67f1" stop-opacity="0.35"/>' +
+      '<stop offset="100%" stop-color="#5b67f1" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + areaStr + '" fill="url(#lineGrad)" stroke="none"/>' +
+      '<polyline points="' + polyStr + '" fill="none" stroke="#5b67f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      circles;
+
+    var shortDates = dates.map(function (d) { return d.slice(5); }); // MM-DD
+    var showEvery = Math.ceil(shortDates.length / 6);
+    labelsEl.innerHTML = shortDates.map(function (d, i) {
+      return (i % showEvery === 0 || i === shortDates.length - 1) ? '<span>' + d + '</span>' : '<span></span>';
+    }).join('');
+  }
+
+  function renderVBarChart(containerId, counts) {
+    var el = document.getElementById(containerId);
+    var entries = topEntries(counts, 5);
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="empty-small">ไม่มีข้อมูลปัญหาในช่วงที่เลือก</div>';
+      return;
+    }
+    var max = entries[0][1];
+    el.innerHTML = entries.map(function (e) {
+      var pct = Math.max(6, Math.round((e[1] / max) * 100));
+      return '<div class="vbar-item">' +
+        '<div class="val">' + e[1] + '</div>' +
+        '<div class="track"><div class="fill" style="height:' + pct + '%"></div></div>' +
+        '<div class="lbl" title="' + esc(e[0]) + '">' + esc(e[0]) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function updateBarCharts() {
+    renderVBarChart('lineBarChart', countBy(viewRows, 'line'));
+    renderVBarChart('modelBarChart', countBy(viewRows, 'model'));
+  }
+
+  function updateRings() {
+    var total = viewRows.length;
+    var issue = viewRows.filter(function (r) { return r.hasIssue === 'พบปัญหา'; }).length;
+    var okPct = total ? Math.round(((total - issue) / total) * 100) : 0;
+    var badPct = total ? Math.round((issue / total) * 100) : 0;
+
+    document.getElementById('ringOk').style.background =
+      'conic-gradient(#22c3a6 0deg ' + (okPct * 3.6) + 'deg, #e5e7f7 ' + (okPct * 3.6) + 'deg 360deg)';
+    document.getElementById('ringBad').style.background =
+      'conic-gradient(#ef5b5b 0deg ' + (badPct * 3.6) + 'deg, #e5e7f7 ' + (badPct * 3.6) + 'deg 360deg)';
+    document.getElementById('pctOk').innerText = okPct + '%';
+    document.getElementById('pctBad').innerText = badPct + '%';
+  }
+
+  function load() {
+    if (!getApiUrl()) { openSettings(); return; }
+    callApiGet('getReportData').then(function (rows) {
+      if (!Array.isArray(rows)) { throw new Error((rows && rows.error) || 'รูปแบบข้อมูลไม่ถูกต้อง'); }
+      allRows = rows;
+      viewRows = rows.slice();
+      refreshAll();
+    }).catch(function (err) {
+      alert('โหลดข้อมูลไม่สำเร็จ: ตรวจสอบ API URL ในปุ่ม ⚙ และอินเทอร์เน็ต (' + err.message + ')');
+    });
+  }
+
+  if (!getApiUrl()) { openSettings(); }
+
+  /**
+   * ส่งออกไฟล์ HTML สแนปช็อตของรายงาน ณ ตอนนี้ เปิดดูได้โดยไม่ต้องมีอินเทอร์เน็ต
+   * ทำโดย clone DOM ปัจจุบัน (ซึ่งกราฟ/การ์ดถูกวาดเป็น inline style/SVG ไว้แล้ว)
+   * แล้วตัดส่วนที่โต้ตอบกับเซิร์ฟเวอร์ออก เหลือไว้แค่ข้อมูลสแนปช็อตล้วน ๆ
+   * หมายเหตุ: ลิงก์ "ดูรูป" ในตารางยังต้องมีอินเทอร์เน็ตตอนกดเปิด เพราะรูปเก็บอยู่บน Google Drive
+   */
+  function exportOffline() {
+    var clone = document.documentElement.cloneNode(true);
+
+    // ลบปุ่ม/ช่องที่ใช้เรียกเซิร์ฟเวอร์ หรือแก้ตัวกรอง (เปิดออฟไลน์แล้วกดไม่ได้)
+    clone.querySelectorAll('.toolbar, script, .modal-overlay').forEach(function (el) { el.remove(); });
+    var searchBox = clone.querySelector('#searchBox');
+    if (searchBox) { searchBox.setAttribute('disabled', 'true'); searchBox.removeAttribute('oninput'); }
+    clone.querySelectorAll('.icon-btn').forEach(function (el) { el.remove(); });
+    clone.querySelectorAll('.filters button').forEach(function (b) { b.removeAttribute('onclick'); b.style.cursor = 'default'; });
+
+    var now = new Date();
+    var stamp = now.toLocaleString('th-TH');
+    var noteBar = document.createElement('div');
+    noteBar.setAttribute('style', 'background:#eef0fe;color:#4451d8;padding:10px 20px;border-radius:14px;font-size:12.5px;margin-bottom:16px;text-align:center;');
+    noteBar.innerText = 'ไฟล์รายงานออฟไลน์ - ข้อมูล ณ วันที่/เวลา ' + stamp + ' (ไม่อัปเดตอัตโนมัติ เปิดหน้ารายงานสดเพื่อดูข้อมูลล่าสุด ลิงก์ดูรูปยังต้องมีเน็ตตอนกด)';
+    var container = clone.querySelector('.container');
+    if (container) container.insertBefore(noteBar, container.firstChild);
+
+    var htmlStr = '<!DOCTYPE html>\n<html>' + clone.innerHTML + '</html>';
+    var blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var pad2 = function (n) { return n < 10 ? '0' + n : '' + n; };
+    var fname = 'PCBA_Report_' + now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) + '_' + pad2(now.getHours()) + pad2(now.getMinutes()) + '.html';
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+  }
+
+  load();
+</script>
+</body>
+</html>
