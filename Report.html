@@ -332,7 +332,7 @@
 <div class="modal-overlay" id="settingsModal">
   <div class="modal-box">
     <h2>ตั้งค่าเชื่อมต่อระบบ</h2>
-    <p>วาง Web App URL ของ Google Apps Script ที่ deploy ไว้ (หน้าตาเหมือน https://script.google.com/macros/s/xxxxx/exec) ตั้งครั้งเดียวต่อเครื่อง ระบบจะจำไว้ให้</p>
+    <p>ระบบล็อค API URL ไว้ในโค้ดแล้ว ปกติไม่ต้องตั้งค่าอะไร ใช้ช่องนี้เฉพาะกรณี deploy ใหม่แล้ว URL เปลี่ยน (จะ override ค่าเดิมเฉพาะเครื่องนี้)</p>
     <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
     <div class="btn-row">
       <button class="btn secondary" onclick="closeSettings()">ปิด</button>
@@ -347,8 +347,11 @@
   var currentFilter = 'all';
   var PALETTE = ['#5b67f1', '#8b93f7', '#22c3a6', '#f6b93b', '#ef5b5b', '#b7bdfa', '#4451d8', '#c7ccfb'];
 
+  // URL ของ Apps Script Web App ที่ deploy ไว้แล้ว - ล็อคไว้ในโค้ด ไม่ต้องตั้งค่าทุกเครื่อง
+  var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxOPwWKggC68VIWm4jg2IL8tzo4K6wwVgOL7AIcD_sVhK9I5ul8V3roWPeoNmx_AtPU/exec';
+
   // ---------- ตั้งค่า API URL (Apps Script Web App ที่ทำหน้าที่เป็น JSON API) ----------
-  function getApiUrl() { return localStorage.getItem('api_url') || ''; }
+  function getApiUrl() { return localStorage.getItem('api_url') || DEFAULT_API_URL; }
 
   function openSettings() {
     document.getElementById('apiUrlInput').value = getApiUrl();
@@ -388,9 +391,16 @@
     return div.innerHTML;
   }
 
-  function photoCell(url) {
-    if (!url) return '-';
-    return '<a class="photo-link" href="' + esc(url) + '" target="_blank" rel="noopener">ดูรูป</a>';
+  function photoCell(urlList) {
+    if (!urlList) return '-';
+    var urls = urlList.toString().split(',').map(function (u) { return u.trim(); }).filter(Boolean);
+    if (urls.length === 0) return '-';
+    if (urls.length === 1) {
+      return '<a class="photo-link" href="' + esc(urls[0]) + '" target="_blank" rel="noopener">ดูรูป</a>';
+    }
+    return urls.map(function (u, i) {
+      return '<a class="photo-link" href="' + esc(u) + '" target="_blank" rel="noopener">ดูรูป ' + (i + 1) + '</a>';
+    }).join(' ');
   }
 
   function applyDateFilter() {
@@ -651,8 +661,6 @@
       alert('โหลดข้อมูลไม่สำเร็จ: ตรวจสอบ API URL ในปุ่ม ⚙ และอินเทอร์เน็ต (' + err.message + ')');
     });
   }
-
-  if (!getApiUrl()) { openSettings(); }
 
   /**
    * ส่งออกไฟล์ HTML สแนปช็อตของรายงาน ณ ตอนนี้ เปิดดูได้โดยไม่ต้องมีอินเทอร์เน็ต

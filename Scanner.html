@@ -93,8 +93,15 @@
       width: 100%; padding: 12px; border-radius: 8px; border: 1px dashed #999;
       background: #fafafa; color: #444; font-weight: 600; margin-bottom: 8px; cursor: pointer;
     }
-    .photo-preview { max-width: 100%; border-radius: 8px; margin-bottom: 12px; display: none; }
     input[type=file] { display: none; }
+    .photo-gallery { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .photo-thumb { position: relative; width: 78px; height: 78px; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+    .photo-thumb .rm {
+      position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+      background: #b3261e; color: #fff; border: 2px solid #fff; font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
+    }
+    .photo-count { font-size: 12px; color: #666; margin: -4px 0 8px; }
   </style>
 </head>
 <body>
@@ -132,10 +139,10 @@
         <button type="button" class="zone-btn" id="zoneSS" onclick="setZone('SS')">SS</button>
       </div>
 
-      <label>ถ่ายรูปบอร์ด (บังคับ)</label>
-      <input type="file" accept="image/*" capture="environment" id="photoInFile" onchange="handlePhotoSelect(this, 'photoInPreview', 'IN')">
-      <button type="button" class="photo-btn" onclick="document.getElementById('photoInFile').click()">📷 ถ่ายรูปบอร์ด (ตอนเข้า)</button>
-      <img id="photoInPreview" class="photo-preview">
+      <label>ถ่ายรูปบอร์ด (บังคับ อย่างน้อย 1 รูป ถ่ายเพิ่มได้หลายรูป)</label>
+      <input type="file" accept="image/*" capture="environment" id="photoInFile" onchange="handlePhotoSelect(this, 'IN')">
+      <button type="button" class="photo-btn" onclick="document.getElementById('photoInFile').click()">📷 เพิ่มรูปบอร์ด (ตอนเข้า)</button>
+      <div class="photo-gallery" id="photoInGallery"></div>
 
       <label>หมายเหตุ <span class="optional">(ไม่บังคับ)</span></label>
       <input type="text" id="noteIn" placeholder="หมายเหตุเพิ่มเติม">
@@ -157,10 +164,10 @@
       <div id="issueList"></div>
       <input type="text" id="issueOtherDetail" placeholder="ระบุรายละเอียด 'อื่นๆ' (บังคับถ้าเลือก)" style="display:none;">
 
-      <label>ถ่ายรูปบอร์ด (บังคับ)</label>
-      <input type="file" accept="image/*" capture="environment" id="photoOutFile" onchange="handlePhotoSelect(this, 'photoOutPreview', 'OUT')">
-      <button type="button" class="photo-btn" onclick="document.getElementById('photoOutFile').click()">📷 ถ่ายรูปบอร์ด (ตอนออก)</button>
-      <img id="photoOutPreview" class="photo-preview">
+      <label>ถ่ายรูปบอร์ด (บังคับ อย่างน้อย 1 รูป ถ่ายเพิ่มได้หลายรูป)</label>
+      <input type="file" accept="image/*" capture="environment" id="photoOutFile" onchange="handlePhotoSelect(this, 'OUT')">
+      <button type="button" class="photo-btn" onclick="document.getElementById('photoOutFile').click()">📷 เพิ่มรูปบอร์ด (ตอนออก)</button>
+      <div class="photo-gallery" id="photoOutGallery"></div>
 
       <label>หมายเหตุ <span class="optional">(ไม่บังคับ)</span></label>
       <input type="text" id="noteOut" placeholder="หมายเหตุเพิ่มเติม">
@@ -179,7 +186,7 @@
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-box">
       <h2>ตั้งค่าเชื่อมต่อระบบ</h2>
-      <p>วาง Web App URL ของ Google Apps Script ที่ deploy ไว้ (หน้าตาเหมือน https://script.google.com/macros/s/xxxxx/exec) ตั้งครั้งเดียวต่อเครื่อง ระบบจะจำไว้ให้</p>
+      <p>ระบบล็อค API URL ไว้ในโค้ดแล้ว ปกติไม่ต้องตั้งค่าอะไร ใช้ช่องนี้เฉพาะกรณี deploy ใหม่แล้ว URL เปลี่ยน (จะ override ค่าเดิมเฉพาะเครื่องนี้)</p>
       <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
       <div class="btn-row">
         <button class="close-btn" onclick="closeSettings()">ปิด</button>
@@ -190,16 +197,20 @@
 
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
+    // URL ของ Apps Script Web App ที่ deploy ไว้แล้ว - ล็อคไว้ในโค้ด ไม่ต้องตั้งค่าทุกเครื่อง
+    var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxOPwWKggC68VIWm4jg2IL8tzo4K6wwVgOL7AIcD_sVhK9I5ul8V3roWPeoNmx_AtPU/exec';
+
     var mode = 'IN';
     var zone = 'CS';
     var hasIssue = false;
     var html5QrCode = null;
     var camOn = false;
-    var photoInData = '';
-    var photoOutData = '';
+    var photoInData = [];
+    var photoOutData = [];
 
     // ถ่าย/เลือกรูป -> ย่อขนาดด้วย canvas ก่อนแปลงเป็น base64 เพื่อไม่ให้ไฟล์ใหญ่เกินไป
-    function handlePhotoSelect(inputEl, previewId, which) {
+    // เพิ่มเข้าไปในรายการรูปได้เรื่อย ๆ (ถ่ายหลายรูปได้) แล้ว reset input เพื่อถ่ายรูปต่อไปได้ทันที
+    function handlePhotoSelect(inputEl, which) {
       var file = inputEl.files && inputEl.files[0];
       if (!file) return;
       var reader = new FileReader();
@@ -214,18 +225,43 @@
           var ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          if (which === 'IN') { photoInData = dataUrl; } else { photoOutData = dataUrl; }
-          var preview = document.getElementById(previewId);
-          preview.src = dataUrl;
-          preview.style.display = 'block';
+          if (which === 'IN') { photoInData.push(dataUrl); } else { photoOutData.push(dataUrl); }
+          renderGallery(which);
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+      inputEl.value = '';
+    }
+
+    function renderGallery(which) {
+      var arr = which === 'IN' ? photoInData : photoOutData;
+      var wrap = document.getElementById(which === 'IN' ? 'photoInGallery' : 'photoOutGallery');
+      wrap.innerHTML = '';
+      arr.forEach(function (src, idx) {
+        var div = document.createElement('div');
+        div.className = 'photo-thumb';
+        var img = document.createElement('img');
+        img.src = src;
+        var rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'rm';
+        rm.innerText = '×';
+        rm.onclick = function () { removePhoto(which, idx); };
+        div.appendChild(img);
+        div.appendChild(rm);
+        wrap.appendChild(div);
+      });
+    }
+
+    function removePhoto(which, idx) {
+      var arr = which === 'IN' ? photoInData : photoOutData;
+      arr.splice(idx, 1);
+      renderGallery(which);
     }
 
     // ---------- ตั้งค่า API URL ----------
-    function getApiUrl() { return localStorage.getItem('api_url') || ''; }
+    function getApiUrl() { return localStorage.getItem('api_url') || DEFAULT_API_URL; }
 
     function openSettings() {
       document.getElementById('apiUrlInput').value = getApiUrl();
@@ -240,10 +276,6 @@
       localStorage.setItem('api_url', v);
       closeSettings();
       loadIssueTypes();
-    }
-
-    if (!getApiUrl()) {
-      openSettings();
     }
 
     // ---------- ตัวช่วยเรียก API (แทน google.script.run) ----------
@@ -381,12 +413,12 @@
       document.getElementById('issueOtherDetail').value = '';
       setIssue(false);
 
-      photoInData = '';
-      photoOutData = '';
+      photoInData = [];
+      photoOutData = [];
       document.getElementById('photoInFile').value = '';
       document.getElementById('photoOutFile').value = '';
-      document.getElementById('photoInPreview').style.display = 'none';
-      document.getElementById('photoOutPreview').style.display = 'none';
+      renderGallery('IN');
+      renderGallery('OUT');
 
       document.getElementById('barcode').focus();
     }
@@ -423,10 +455,10 @@
       }
 
       if (mode === 'IN') {
-        if (!photoInData) {
+        if (photoInData.length === 0) {
           submitBtn.disabled = false;
           submitBtn.innerText = 'บันทึกการสแกน';
-          showStatus('กรุณาถ่ายรูปบอร์ดก่อนบันทึก', false);
+          showStatus('กรุณาถ่ายรูปบอร์ดอย่างน้อย 1 รูปก่อนบันทึก', false);
           return;
         }
         var line = document.getElementById('line').value.trim();
@@ -442,10 +474,10 @@
         };
         callApiPost('recordIn', payload).then(handleResult).catch(handleError);
       } else {
-        if (!photoOutData) {
+        if (photoOutData.length === 0) {
           submitBtn.disabled = false;
           submitBtn.innerText = 'บันทึกการสแกน';
-          showStatus('กรุณาถ่ายรูปบอร์ดก่อนบันทึก', false);
+          showStatus('กรุณาถ่ายรูปบอร์ดอย่างน้อย 1 รูปก่อนบันทึก', false);
           return;
         }
         var checkedBoxes = Array.from(document.querySelectorAll('#issueList input[type=checkbox]:checked'));
