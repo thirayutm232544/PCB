@@ -162,6 +162,14 @@
   .empty-small { color: var(--muted); font-size: 12.5px; padding: 8px 0; }
   .filter-note { font-size: 12px; color: var(--muted); margin: 4px 0 14px; }
 
+  /* เหตุที่นำมาล้าง - horizontal bar list */
+  .hbar-list { display: flex; flex-direction: column; gap: 10px; }
+  .hbar-item { display: flex; align-items: center; gap: 10px; }
+  .hbar-item .hbar-label { width: 180px; flex-shrink: 0; font-size: 12.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar-item .hbar-track { flex: 1; background: var(--primary-light); border-radius: 8px; height: 14px; overflow: hidden; }
+  .hbar-item .hbar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--primary), var(--primary-dark)); }
+  .hbar-item .hbar-val { width: 34px; text-align: right; font-size: 12px; font-weight: 800; color: var(--text); flex-shrink: 0; }
+
   /* settings modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,25,60,0.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
   .modal-overlay.show { display: flex; }
@@ -299,6 +307,11 @@
     </div>
   </div>
 
+  <div class="card mb">
+    <h3>เหตุผลที่นำบอร์ดมาล้างบ่อยที่สุด (Top 10)</h3>
+    <div class="hbar-list" id="reasonBarList"></div>
+  </div>
+
   <div class="card">
     <h3 style="margin-bottom:10px;">รายการทั้งหมด</h3>
     <div id="filterNote" class="filter-note"></div>
@@ -314,7 +327,7 @@
         <thead>
           <tr>
             <th>เลขรัน</th><th>วันที่</th><th>เวลาเข้า</th><th>รหัสพนักงาน(เข้า)</th>
-            <th>รหัสบอร์ด</th><th>โมเดล</th><th>ไลน์</th><th>Zone</th><th>รูปเข้า</th>
+            <th>รหัสบอร์ด</th><th>โมเดล</th><th>ไลน์</th><th>Zone</th><th>เหตุที่นำมาล้าง</th><th>รูปเข้า</th>
             <th>เวลาออก</th><th>รหัสพนักงาน(ออก)</th><th>ผู้รับรอง</th><th>รูปออก</th>
             <th>พบปัญหา</th><th>ประเภทปัญหา</th><th>หมายเหตุ</th>
             <th>นาที</th><th>สถานะ</th>
@@ -400,6 +413,7 @@
     updateDonut();
     updateLineChart();
     updateBarCharts();
+    updateReasonChart();
     updateRings();
     render();
   }
@@ -431,6 +445,7 @@
         '<td>' + esc(r.model || '-') + '</td>' +
         '<td>' + esc(r.line || '-') + '</td>' +
         '<td>' + esc(r.zone || '-') + '</td>' +
+        '<td>' + esc(r.reason || '-') + '</td>' +
         '<td>' + photoCell(r.photoIn) + '</td>' +
         '<td>' + fmtTime(r.timeOut) + '</td>' +
         '<td>' + esc(r.empOut || '-') + '</td>' +
@@ -490,6 +505,18 @@
     rows.forEach(function (r) {
       if (r.hasIssue !== 'พบปัญหา' || !r[field]) return;
       var v = r[field].trim();
+      if (!v) return;
+      counts[v] = (counts[v] || 0) + 1;
+    });
+    return counts;
+  }
+
+  // เหมือน countBy แต่นับทุกแถว ไม่กรองเฉพาะแถวที่พบปัญหา (ใช้กับ "เหตุที่นำมาล้าง" ซึ่งมีทุกแถว)
+  function countAllBy(rows, field) {
+    var counts = {};
+    rows.forEach(function (r) {
+      if (!r[field]) return;
+      var v = r[field].toString().trim();
       if (!v) return;
       counts[v] = (counts[v] || 0) + 1;
     });
@@ -601,6 +628,25 @@
   function updateBarCharts() {
     renderVBarChart('lineBarChart', countBy(viewRows, 'line'));
     renderVBarChart('modelBarChart', countBy(viewRows, 'model'));
+  }
+
+  function updateReasonChart() {
+    var el = document.getElementById('reasonBarList');
+    var counts = countAllBy(viewRows, 'reason');
+    var entries = topEntries(counts, 10);
+    if (entries.length === 0) {
+      el.innerHTML = '<div class="empty-small">ยังไม่มีข้อมูลเหตุที่นำมาล้างในช่วงที่เลือก</div>';
+      return;
+    }
+    var max = entries[0][1];
+    el.innerHTML = entries.map(function (e) {
+      var pct = Math.max(4, Math.round((e[1] / max) * 100));
+      return '<div class="hbar-item">' +
+        '<div class="hbar-label" title="' + esc(e[0]) + '">' + esc(e[0]) + '</div>' +
+        '<div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="hbar-val">' + e[1] + '</div>' +
+        '</div>';
+    }).join('');
   }
 
   function updateRings() {

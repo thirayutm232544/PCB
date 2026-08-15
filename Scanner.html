@@ -120,6 +120,10 @@
         <button type="button" class="zone-btn" id="zoneSS" onclick="setZone('SS')">SS</button>
       </div>
 
+      <label>เหตุที่นำมาล้าง <span class="optional">(ไม่บังคับ พิมพ์ได้เลย มีคำแนะนำจากที่เคยกรอกไว้)</span></label>
+      <input type="text" id="reason" list="reasonList" placeholder="เช่น ตามแผนผลิต, ลูกค้าตีกลับ, สุ่มตรวจ QC">
+      <datalist id="reasonList"></datalist>
+
       <label>ถ่ายรูปบอร์ด (บังคับ อย่างน้อย 1 รูป ถ่ายเพิ่มได้หลายรูป)</label>
       <input type="file" accept="image/*" capture="environment" id="photoInFile" onchange="handlePhotoSelect(this, 'IN')">
       <button type="button" class="photo-btn" onclick="document.getElementById('photoInFile').click()">📷 เพิ่มรูปบอร์ด (ตอนเข้า)</button>
@@ -265,6 +269,18 @@
     }
     loadIssueTypes();
 
+    // โหลดรายการ "เหตุที่นำมาล้าง" ที่เคยมีคนพิมพ์ไว้แล้ว มาทำ autocomplete (ไม่บังคับเลือก พิมพ์ใหม่ได้เสมอ)
+    function loadCleaningReasons() {
+      callApiGet('getCleaningReasons').then(function (reasons) {
+        if (!Array.isArray(reasons)) return;
+        var list = document.getElementById('reasonList');
+        list.innerHTML = reasons.map(function (r) {
+          return '<option value="' + r.replace(/"/g, '&quot;') + '">';
+        }).join('');
+      }).catch(function () { /* ไม่มี suggestion ก็ยังพิมพ์เองได้ตามปกติ ไม่ต้องแจ้ง error */ });
+    }
+    loadCleaningReasons();
+
     function onIssueCheck() {
       var otherChecked = Array.from(document.querySelectorAll('#issueList input[type=checkbox]'))
         .some(function (cb) { return cb.checked && cb.value === 'อื่นๆ'; });
@@ -358,6 +374,12 @@
       document.getElementById('issueOtherDetail').value = '';
       setIssue(false);
 
+      var reasonInput = document.getElementById('reason');
+      var typedReason = reasonInput.value.trim();
+      reasonInput.value = '';
+      // ถ้าพิมพ์เหตุผลใหม่ที่ยังไม่เคยมี ให้โหลด suggestion ใหม่ เผื่อมีคนอื่นเห็นเป็นตัวเลือกต่อ
+      if (typedReason) loadCleaningReasons();
+
       photoInData = [];
       photoOutData = [];
       document.getElementById('photoInFile').value = '';
@@ -408,6 +430,7 @@
           model: document.getElementById('model').value.trim(),
           line: line,
           zone: zone,
+          reason: document.getElementById('reason').value.trim(),
           note: document.getElementById('noteIn').value.trim(),
           photoIn: photoInData
         };
