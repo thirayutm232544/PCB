@@ -194,7 +194,6 @@
       <button class="icon-btn" id="refreshBtn" title="รีเฟรชข้อมูล" onclick="load()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M18 4v5h-5M6 20v-5h5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button class="icon-btn outline" id="settingsBtn" title="ตั้งค่า API URL" onclick="openSettings()">⚙</button>
     </div>
 
     <div class="toolbar" style="width:100%;">
@@ -329,18 +328,6 @@
 
 </div>
 
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal-box">
-    <h2>ตั้งค่าเชื่อมต่อระบบ</h2>
-    <p>ระบบล็อค API URL ไว้ในโค้ดแล้ว ปกติไม่ต้องตั้งค่าอะไร ใช้ช่องนี้เฉพาะกรณี deploy ใหม่แล้ว URL เปลี่ยน (จะ override ค่าเดิมเฉพาะเครื่องนี้)</p>
-    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
-    <div class="btn-row">
-      <button class="btn secondary" onclick="closeSettings()">ปิด</button>
-      <button class="btn" onclick="saveSettings()">บันทึก</button>
-    </div>
-  </div>
-</div>
-
 <script>
   var allRows = [];
   var viewRows = [];
@@ -350,28 +337,8 @@
   // URL ของ Apps Script Web App ที่ deploy ไว้แล้ว - ล็อคไว้ในโค้ด ไม่ต้องตั้งค่าทุกเครื่อง
   var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxOPwWKggC68VIWm4jg2IL8tzo4K6wwVgOL7AIcD_sVhK9I5ul8V3roWPeoNmx_AtPU/exec';
 
-  // ---------- ตั้งค่า API URL (Apps Script Web App ที่ทำหน้าที่เป็น JSON API) ----------
-  function getApiUrl() { return localStorage.getItem('api_url') || DEFAULT_API_URL; }
-
-  function openSettings() {
-    document.getElementById('apiUrlInput').value = getApiUrl();
-    document.getElementById('settingsModal').classList.add('show');
-  }
-  function closeSettings() {
-    document.getElementById('settingsModal').classList.remove('show');
-  }
-  function saveSettings() {
-    var v = document.getElementById('apiUrlInput').value.trim();
-    if (!v) { alert('กรุณาวาง Web App URL ก่อน'); return; }
-    localStorage.setItem('api_url', v);
-    closeSettings();
-    load();
-  }
-
   function callApiGet(action) {
-    var apiUrl = getApiUrl();
-    if (!apiUrl) { openSettings(); return Promise.reject(new Error('ยังไม่ได้ตั้งค่า API URL')); }
-    return fetch(apiUrl + '?action=' + encodeURIComponent(action)).then(function (r) { return r.json(); });
+    return fetch(DEFAULT_API_URL + '?action=' + encodeURIComponent(action)).then(function (r) { return r.json(); });
   }
 
   function fmtTime(iso) {
@@ -651,14 +618,13 @@
   }
 
   function load() {
-    if (!getApiUrl()) { openSettings(); return; }
     callApiGet('getReportData').then(function (rows) {
       if (!Array.isArray(rows)) { throw new Error((rows && rows.error) || 'รูปแบบข้อมูลไม่ถูกต้อง'); }
       allRows = rows;
       viewRows = rows.slice();
       refreshAll();
     }).catch(function (err) {
-      alert('โหลดข้อมูลไม่สำเร็จ: ตรวจสอบ API URL ในปุ่ม ⚙ และอินเทอร์เน็ต (' + err.message + ')');
+      alert('โหลดข้อมูลไม่สำเร็จ: ตรวจสอบอินเทอร์เน็ต หรือแจ้งผู้ดูแลระบบ (' + err.message + ')');
     });
   }
 
